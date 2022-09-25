@@ -1,0 +1,15 @@
+numpy
+torch
+tqdm
+more-itertools
+transformers>=4.19.0
+ffmpeg-python==0.2.0
+pytest
+black
+isort
+flake8
+flake8-annotations
+flake8-annotations-complexity
+flake8-docstrings
+flake8-eradicate
+pep8-naming
