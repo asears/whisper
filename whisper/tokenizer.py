@@ -196,7 +196,7 @@ class Tokenizer:
     def language_token(self) -> int:
         """Returns the token id corresponding to the value of the `language` field"""
         if self.language is None:
-            raise ValueError(f"This tokenizer does not have language token configured")
+            raise ValueError("This tokenizer does not have language token configured")
 
         additional_tokens = dict(
             zip(
@@ -225,7 +225,7 @@ class Tokenizer:
     @property
     @lru_cache()
     def all_language_codes(self) -> Tuple[str]:
-        return tuple(self.decode([l]).strip("<|>") for l in self.all_language_tokens)
+        return tuple(self.decode([l]).strip("<|>") for l in self.all_language_tokens)  # noqa: E741
 
     @property
     @lru_cache()

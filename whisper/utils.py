@@ -47,8 +47,7 @@ def write_vtt(transcript: Iterator[dict], file: TextIO):
     print("WEBVTT\n", file=file)
     for segment in transcript:
         print(
-            f"{format_timestamp(segment['start'])} --> {format_timestamp(segment['end'])}\n"
-            f"{segment['text'].replace('-->', '->')}\n",
+            f"{format_timestamp(segment['start'])} --> {format_timestamp(segment['end'])}\n" f"{segment['text'].replace('-->', '->')}\n",
             file=file,
             flush=True,
         )

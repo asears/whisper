@@ -33,16 +33,12 @@ class LayerNorm(nn.LayerNorm):
 
 class Linear(nn.Linear):
     def forward(self, x: Tensor) -> Tensor:
-        return F.linear(
-            x, self.weight.to(x.dtype), None if self.bias is None else self.bias.to(x.dtype)
-        )
+        return F.linear(x, self.weight.to(x.dtype), None if self.bias is None else self.bias.to(x.dtype))
 
 
 class Conv1d(nn.Conv1d):
     def _conv_forward(self, x: Tensor, weight: Tensor, bias: Optional[Tensor]) -> Tensor:
-        return super()._conv_forward(
-            x, weight.to(x.dtype), None if bias is None else bias.to(x.dtype)
-        )
+        return super()._conv_forward(x, weight.to(x.dtype), None if bias is None else bias.to(x.dtype))
 
 
 def sinusoids(length, channels, max_timescale=10000):
@@ -135,9 +131,7 @@ class AudioEncoder(nn.Module):
         self.conv2 = Conv1d(n_state, n_state, kernel_size=3, stride=2, padding=1)
         self.register_buffer("positional_embedding", sinusoids(n_ctx, n_state))
 
-        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList(
-            [ResidualAttentionBlock(n_state, n_head) for _ in range(n_layer)]
-        )
+        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList([ResidualAttentionBlock(n_state, n_head) for _ in range(n_layer)])
         self.ln_post = LayerNorm(n_state)
 
     def forward(self, x: Tensor):
@@ -166,9 +160,7 @@ class TextDecoder(nn.Module):
         self.token_embedding = nn.Embedding(n_vocab, n_state)
         self.positional_embedding = nn.Parameter(torch.empty(n_ctx, n_state))
 
-        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList(
-            [ResidualAttentionBlock(n_state, n_head, cross_attention=True) for _ in range(n_layer)]
-        )
+        self.blocks: Iterable[ResidualAttentionBlock] = nn.ModuleList([ResidualAttentionBlock(n_state, n_head, cross_attention=True) for _ in range(n_layer)])
         self.ln = LayerNorm(n_state)
 
         mask = torch.empty(n_ctx, n_ctx).fill_(-np.inf).triu_(1)

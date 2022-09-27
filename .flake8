@@ -1,4 +1,4 @@
 [flake8]
 dictionaries = en_US,python,technical,pandas
 max-line-length = 160
-ignore = SC100, SC200
+ignore = SC100, SC200, F401, E251, E203, W503

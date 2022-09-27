@@ -86,7 +86,4 @@ def test_text_normalizer():
     assert std("10km") == "10 km"
     assert std("RC232") == "rc 232"
 
-    assert (
-        std("Mr. Park visited Assoc. Prof. Kim Jr.")
-        == "mister park visited associate professor kim junior"
-    )
+    assert std("Mr. Park visited Assoc. Prof. Kim Jr.") == "mister park visited associate professor kim junior"

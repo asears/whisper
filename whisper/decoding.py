@@ -32,7 +32,7 @@ def detect_language(model: "Whisper", mel: Tensor, tokenizer: Tokenizer = None) 
     if tokenizer is None:
         tokenizer = get_tokenizer(model.is_multilingual)
     if tokenizer.language is None or tokenizer.language_token not in tokenizer.sot_sequence:
-        raise ValueError(f"This model doesn't have language tokens so it can't perform lang id")
+        raise ValueError("This model doesn't have language tokens so it can't perform lang id")
 
     single = mel.ndim == 2
     if single:
@@ -54,11 +54,7 @@ def detect_language(model: "Whisper", mel: Tensor, tokenizer: Tokenizer = None) 
     language_tokens = logits.argmax(dim=-1)
     language_token_probs = logits.softmax(dim=-1).cpu()
     language_probs = [
-        {
-            c: language_token_probs[i, j].item()
-            for j, c in zip(tokenizer.all_language_tokens, tokenizer.all_language_codes)
-        }
-        for i in range(n_audio)
+        {c: language_token_probs[i, j].item() for j, c in zip(tokenizer.all_language_tokens, tokenizer.all_language_codes)} for i in range(n_audio)
     ]
 
     if single:
@@ -76,24 +72,24 @@ class DecodingOptions:
     # sampling-related options
     temperature: float = 0.0
     sample_len: Optional[int] = None  # maximum number of tokens to sample
-    best_of: Optional[int] = None     # number of independent samples to collect, when t > 0
-    beam_size: Optional[int] = None   # number of beams in beam search, when t == 0
-    patience: float = 0.0             # patience in beam search (https://arxiv.org/abs/2204.05424)
+    best_of: Optional[int] = None  # number of independent samples to collect, when t > 0
+    beam_size: Optional[int] = None  # number of beams in beam search, when t == 0
+    patience: float = 0.0  # patience in beam search (https://arxiv.org/abs/2204.05424)
 
     # options for ranking generations (either beams or best-of-N samples)
-    length_penalty: Optional[float] = None   # "alpha" in Google NMT, None defaults to length norm
+    length_penalty: Optional[float] = None  # "alpha" in Google NMT, None defaults to length norm
 
     # prompt, prefix, and token suppression
-    prompt: Optional[Union[str, List[int]]] = None   # text or tokens for the previous context
-    prefix: Optional[Union[str, List[int]]] = None   # text or tokens to prefix the current context
-    suppress_blank: bool = True                      # this will suppress blank outputs
+    prompt: Optional[Union[str, List[int]]] = None  # text or tokens for the previous context
+    prefix: Optional[Union[str, List[int]]] = None  # text or tokens to prefix the current context
+    suppress_blank: bool = True  # this will suppress blank outputs
 
     # list of tokens ids (or comma-separated token ids) to suppress
     # "-1" will suppress a set of symbols as defined in `tokenizer.non_speech_tokens()`
     suppress_tokens: Optional[Union[str, Iterable[int]]] = "-1"
 
     # timestamp sampling options
-    without_timestamps: bool = False              # use <|notimestamps|> to sample text tokens only
+    without_timestamps: bool = False  # use <|notimestamps|> to sample text tokens only
     max_initial_timestamp: Optional[float] = 0.0  # the initial timestamp cannot be later than this
 
     # implementation details
@@ -221,9 +217,7 @@ class TokenDecoder:
         """
         raise NotImplementedError
 
-    def finalize(
-        self, tokens: Tensor, sum_logprobs: Tensor
-    ) -> Tuple[Sequence[Sequence[Tensor]], List[List[float]]]:
+    def finalize(self, tokens: Tensor, sum_logprobs: Tensor) -> Tuple[Sequence[Sequence[Tensor]], List[List[float]]]:
         """Finalize search and return the final candidate sequences
 
         Parameters
@@ -337,9 +331,7 @@ class BeamSearchDecoder(TokenDecoder):
                 previously_finished[seq] = newly_finished[seq]
 
         # mark as completed if all audio has enough number of samples
-        completed = all(
-            len(sequences) >= self.max_candidates for sequences in self.finished_sequences
-        )
+        completed = all(len(sequences) >= self.max_candidates for sequences in self.finished_sequences)
         return tokens, completed
 
     def finalize(self, preceding_tokens: Tensor, sum_logprobs: Tensor):
@@ -353,12 +345,8 @@ class BeamSearchDecoder(TokenDecoder):
                     if len(sequences) >= self.beam_size:
                         break
 
-        tokens: List[List[Tensor]] = [
-            [torch.tensor(seq) for seq in sequences.keys()] for sequences in self.finished_sequences
-        ]
-        sum_logprobs: List[List[float]] = [
-            list(sequences.values()) for sequences in self.finished_sequences
-        ]
+        tokens: List[List[Tensor]] = [[torch.tensor(seq) for seq in sequences.keys()] for sequences in self.finished_sequences]
+        sum_logprobs: List[List[float]] = [list(sequences.values()) for sequences in self.finished_sequences]
         return tokens, sum_logprobs
 
 
@@ -397,9 +385,7 @@ class SuppressTokens(LogitFilter):
 
 
 class ApplyTimestampRules(LogitFilter):
-    def __init__(
-        self, tokenizer: Tokenizer, sample_begin: int, max_initial_timestamp_index: Optional[int]
-    ):
+    def __init__(self, tokenizer: Tokenizer, sample_begin: int, max_initial_timestamp_index: Optional[int]):
         self.tokenizer = tokenizer
         self.sample_begin = sample_begin
         self.max_initial_timestamp_index = max_initial_timestamp_index
@@ -469,9 +455,7 @@ class DecodingTask:
 
         # decoder: implements how to select the next tokens, given the autoregressive distribution
         if options.beam_size is not None:
-            self.decoder = BeamSearchDecoder(
-                options.beam_size, tokenizer.eot, self.inference, options.patience
-            )
+            self.decoder = BeamSearchDecoder(options.beam_size, tokenizer.eot, self.inference, options.patience)
         else:
             self.decoder = GreedyDecoder(options.temperature, tokenizer.eot)
 
@@ -486,9 +470,7 @@ class DecodingTask:
             max_initial_timestamp_index = None
             if options.max_initial_timestamp:
                 max_initial_timestamp_index = round(self.options.max_initial_timestamp / precision)
-            self.logit_filters.append(
-                ApplyTimestampRules(tokenizer, self.sample_begin, max_initial_timestamp_index)
-            )
+            self.logit_filters.append(ApplyTimestampRules(tokenizer, self.sample_begin, max_initial_timestamp_index))
 
     def _verify_options(self, options: DecodingOptions) -> DecodingOptions:
         if options.beam_size is not None and options.best_of is not None:
@@ -509,18 +491,14 @@ class DecodingTask:
         prompt = self.options.prompt
 
         if prefix:
-            prefix_tokens = (
-                self.tokenizer.encode(" " + prefix.strip()) if isinstance(prefix, str) else prefix
-            )
+            prefix_tokens = self.tokenizer.encode(" " + prefix.strip()) if isinstance(prefix, str) else prefix
             if self.sample_len is not None:
                 max_prefix_len = self.n_ctx // 2 - self.sample_len
                 prefix_tokens = prefix_tokens[-max_prefix_len:]
             tokens = tokens + prefix_tokens
 
         if prompt:
-            prompt_tokens = (
-                self.tokenizer.encode(" " + prompt.strip()) if isinstance(prompt, str) else prompt
-            )
+            prompt_tokens = self.tokenizer.encode(" " + prompt.strip()) if isinstance(prompt, str) else prompt
             tokens = [self.tokenizer.sot_prev] + prompt_tokens[-(self.n_ctx // 2 - 1) :] + tokens
 
         return tuple(tokens)
@@ -540,9 +518,7 @@ class DecodingTask:
             assert isinstance(self.options.suppress_tokens, list), "suppress_tokens must be a list"
             suppress_tokens = self.options.suppress_tokens
 
-        suppress_tokens.extend(
-            [self.tokenizer.sot, self.tokenizer.sot_prev, self.tokenizer.sot_lm]
-        )
+        suppress_tokens.extend([self.tokenizer.sot, self.tokenizer.sot_prev, self.tokenizer.sot_lm])
         if self.tokenizer.no_speech is not None:
             # no-speech probability is collected separately
             suppress_tokens.append(self.tokenizer.no_speech)
@@ -641,9 +617,7 @@ class DecodingTask:
 
         # get the final candidates for each group, and slice between the first sampled token and EOT
         tokens, sum_logprobs = self.decoder.finalize(tokens, sum_logprobs)
-        tokens: List[List[Tensor]] = [
-            [t[self.sample_begin : (t == tokenizer.eot).nonzero()[0, 0]] for t in s] for s in tokens
-        ]
+        tokens: List[List[Tensor]] = [[t[self.sample_begin : (t == tokenizer.eot).nonzero()[0, 0]] for t in s] for s in tokens]
 
         # select the top-ranked sample in each group
         selected = self.sequence_ranker.rank(tokens, sum_logprobs)
@@ -698,7 +672,7 @@ def decode(model: "Whisper", mel: Tensor, options: DecodingOptions = DecodingOpt
         mel = mel.unsqueeze(0)
 
     result = DecodingTask(model, options).run(mel)
-    
+
     if single:
         result = result[0]
 
